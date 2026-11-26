@@ -1,0 +1,12 @@
+/bin/
+/target/
+/node_modules/
+*.tar.gz
+*.local.md
+docs.local/
+.env
+.env.local
+.env.*.local
+.DS_Store
+/.verify/
+__pycache__/

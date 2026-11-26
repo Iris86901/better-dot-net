@@ -1,0 +1,34 @@
+[Unit]
+Description=Dot-Proxy Gateway
+After=network-online.target dot-proxy-core.service
+Wants=network-online.target dot-proxy-core.service
+
+[Service]
+Type=simple
+User=dotproxy
+Group=dotproxy
+UMask=0077
+WorkingDirectory=/opt/dot-proxy
+EnvironmentFile=/etc/dot-proxy/env
+Environment=RUST_LOG=dot_proxy=info
+ExecStart=/opt/dot-proxy/bin/dot-proxy
+LimitNOFILE=65535
+MemoryMax=128M
+NoNewPrivileges=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+ReadOnlyPaths=/opt/dot-proxy /etc/dot-proxy
+ReadWritePaths=/var/lib/dot-proxy
+Restart=always
+RestartSec=2s
+
+[Install]
+WantedBy=multi-user.target

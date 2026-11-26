@@ -1,0 +1,99 @@
+name: Release Better Dot Net
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to create or update (e.g. v0.1.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies (ziglang for glibc 2.34, musl-tools for static bdn)
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y musl-tools
+          rustup target add x86_64-unknown-linux-gnu x86_64-unknown-linux-musl
+          python3 -m venv .rel
+          .rel/bin/pip install 'ziglang==0.15.2'
+          printf '%s\n' '#!/bin/sh' "exec \"$PWD/.rel/bin/python\" -m ziglang cc -target x86_64-linux-gnu.2.34 \"\$@\"" > .rel/zig-cc
+          chmod +x .rel/zig-cc
+
+      - name: Fetch pinned meow-rs release archive
+        run: |
+          asset=meow-v0.29.0-x86_64-unknown-linux-musl
+          curl --fail --location --silent --show-error --max-time 90 \
+            "https://github.com/meow-rs/meow-rs/releases/download/v0.29.0/$asset.tar.gz" -o meow.tar.gz
+          echo '92fe902cca5e95799af02a42fcda9a4f9195aa61ec126057b51b15a8d2116ca2  meow.tar.gz' | sha256sum -c
+
+      - name: Build Basic & Advanced server binaries (glibc 2.34 compatible)
+        env:
+          CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: ${{ github.workspace }}/.rel/zig-cc
+        run: |
+          cargo build --locked --release --target x86_64-unknown-linux-gnu \
+            --features advanced,terminal-cli \
+            --bin better-dot-net --bin bdn-collab --bin bdn-terminal
+
+      - name: Build standalone Agent client bdn (static musl)
+        env:
+          CC_x86_64_unknown_linux_musl: musl-gcc
+          CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER: musl-gcc
+        run: |
+          cargo build --locked --release --target x86_64-unknown-linux-musl \
+            --features collab-cli --bin bdn
+
+      - name: Package 3 independent release modules
+        run: |
+          mkdir -p dist
+          bash deploy/basic/package.sh \
+            target/x86_64-unknown-linux-gnu/release/better-dot-net \
+            dist/basic-stage \
+            meow.tar.gz
+          mv dist/basic-stage/basic-linux-x86_64.tgz dist/basic-stage/basic-linux-x86_64.tgz.sha256 dist/
+          bash deploy/advanced/package.sh \
+            target/x86_64-unknown-linux-gnu/release \
+            dist
+          bash deploy/client/package.sh \
+            target/x86_64-unknown-linux-musl/release/bdn \
+            dist
+          ls -lh dist/
+          (cd dist && sha256sum -c *.sha256)
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          notes=$(cat <<'EOF'
+          Three independently upgradable modules:
+
+          1. **Basic Server (`basic-linux-x86_64.tgz`)**: Browser gateway (`better-dot-net`), web runtime (`web/`), bundled `meow-rs`, systemd units, Caddyfile.
+          2. **Advanced Server (`advanced-server-linux-x86_64.tgz`)**: Multi-Dot collaboration daemon (`bdn-collab`), named terminal relay (`bdn-terminal`), `enroll.py`, `invite.py`, systemd unit + sysusers, Caddyfile.
+          3. **Agent Cloud-Computer Client (`bdn-linux-x86_64`)**: Fully static Linux x86-64 CLI binary. Place in `/workspace/shared/better-dot-net/bdn`, join once with `bdn join <origin> <invite_code>` (stores `config.json` + `0600 credentials` beside `bdn`), and overwrite the binary directly for zero-downtime upgrades.
+          EOF
+          )
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" \
+              dist/basic-linux-x86_64.tgz dist/basic-linux-x86_64.tgz.sha256 \
+              dist/advanced-server-linux-x86_64.tgz dist/advanced-server-linux-x86_64.tgz.sha256 \
+              dist/bdn-linux-x86_64 dist/bdn-linux-x86_64.sha256 \
+              --clobber
+          else
+            gh release create "$TAG" \
+              dist/basic-linux-x86_64.tgz dist/basic-linux-x86_64.tgz.sha256 \
+              dist/advanced-server-linux-x86_64.tgz dist/advanced-server-linux-x86_64.tgz.sha256 \
+              dist/bdn-linux-x86_64 dist/bdn-linux-x86_64.sha256 \
+              --title "Better Dot Net $TAG" \
+              --notes "$notes"
+          fi
