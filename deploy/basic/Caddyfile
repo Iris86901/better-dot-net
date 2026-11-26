@@ -1,0 +1,29 @@
+# Merge this site block, not the whole file, into the operator's Caddy config.
+# Use your hostname or an HTTPS literal IP with a browser-trusted IP certificate.
+# Keep the upstream loopback-only.
+proxy.example.com {
+    encode zstd gzip
+    header {
+        -Server
+        -Alt-Svc
+        X-Robots-Tag "noindex, nofollow"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "no-referrer"
+    }
+
+    @runtime path /assets/* /app.js /sw.js /styles.css /favicon.svg /lifecycle.js
+    @worker path /sw.js
+    header @worker Service-Worker-Allowed "/"
+    header @runtime Cache-Control "no-cache"
+    handle @runtime {
+        # Each release is a complete tree; see README for switching/rollback.
+        root * /opt/better-dot-net-basic/current/web
+        file_server
+    }
+
+    handle {
+        reverse_proxy 127.0.0.1:3030 {
+            flush_interval -1
+        }
+    }
+}

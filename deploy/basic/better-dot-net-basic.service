@@ -1,0 +1,35 @@
+[Unit]
+Description=Better Dot Net browser-only gateway
+After=network-online.target better-dot-net-basic-core.service
+Requires=better-dot-net-basic-core.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=bdnbasic
+Group=bdnbasic
+StateDirectory=better-dot-net-basic
+StateDirectoryMode=0700
+Environment=HOST=127.0.0.1
+Environment=PORT=3030
+Environment=STATE_DIR=/var/lib/better-dot-net-basic
+Environment=MEOW_BIN=/opt/better-dot-net-basic/current/bin/meow
+Environment=MEOW_SOCKS=127.0.0.1:17990
+Environment=MEOW_API=127.0.0.1:19190
+Environment=REQUIRE_MEOW=1
+EnvironmentFile=/etc/better-dot-net-basic/environment
+ExecStart=/opt/better-dot-net-basic/current/bin/better-dot-net
+UMask=0077
+Restart=on-failure
+RestartSec=2s
+MemoryMax=128M
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target

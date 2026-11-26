@@ -1,0 +1,33 @@
+[Unit]
+Description=Dot-Proxy Routing Core (meow-rs)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=dotproxy
+Group=dotproxy
+UMask=0077
+WorkingDirectory=/var/lib/dot-proxy
+EnvironmentFile=/etc/dot-proxy/env
+ExecStart=/opt/dot-proxy/bin/meow --no-external-plugins -d /var/lib/dot-proxy -f /var/lib/dot-proxy/meow.yaml
+LimitNOFILE=65535
+MemoryMax=128M
+NoNewPrivileges=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+ReadOnlyPaths=/opt/dot-proxy /etc/dot-proxy
+ReadWritePaths=/var/lib/dot-proxy
+Restart=always
+RestartSec=2s
+
+[Install]
+WantedBy=multi-user.target

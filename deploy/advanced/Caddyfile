@@ -1,0 +1,50 @@
+# Optional standalone HTTPS ingress. Replace the example hostname with a name
+# you control; do not attach these routes to the browser proxy's origin.
+collab.example.com {
+	header {
+		Cache-Control "no-store"
+		X-Content-Type-Options "nosniff"
+	}
+
+	@action {
+		method POST
+		path /v1/action
+	}
+	@artifact {
+		method GET PUT
+		path /v1/artifact/*
+	}
+	@tunnel {
+		method GET
+		path /v1/tunnel
+	}
+	@recovery {
+		path /agent /agent/invite
+	}
+
+	handle @recovery {
+		reverse_proxy 127.0.0.1:9300
+	}
+	handle @tunnel {
+		reverse_proxy 127.0.0.1:9300 {
+			flush_interval -1
+		}
+	}
+	handle @action {
+		reverse_proxy 127.0.0.1:9300
+	}
+	handle @artifact {
+		reverse_proxy 127.0.0.1:9300
+	}
+	handle {
+		respond 404
+	}
+}
+
+# Optional wildcard ingress for Dot-exposed services (set BDN_EXPOSE_DOMAIN=svc.example.com
+# on bdn-collab and configure a wildcard DNS record + wildcard TLS certificate in Caddy).
+# *.svc.example.com {
+# 	reverse_proxy 127.0.0.1:9300 {
+# 		flush_interval -1
+# 	}
+# }

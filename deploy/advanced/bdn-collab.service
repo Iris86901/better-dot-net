@@ -1,0 +1,30 @@
+[Unit]
+Description=Better Dot Net advanced collaboration
+After=network.target
+
+[Service]
+Type=simple
+User=bdn-collab
+Group=bdn-collab
+StateDirectory=better-dot-net-advanced
+StateDirectoryMode=0700
+LoadCredential=nodes.json:/etc/better-dot-net-advanced/nodes.json
+ExecStart=/opt/better-dot-net-advanced/bin/bdn-collab %d/nodes.json ${STATE_DIRECTORY} 127.0.0.1:9300
+Restart=on-failure
+RestartSec=2s
+KillSignal=SIGINT
+TimeoutStopSec=15s
+UMask=0077
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target

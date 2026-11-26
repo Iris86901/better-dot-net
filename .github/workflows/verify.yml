@@ -1,0 +1,72 @@
+name: Verify Better Dot Net
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'Cargo.*'
+      - 'src/**'
+      - 'web/**'
+      - 'scripts/verify-*.py'
+      - 'scripts/verify-*.mjs'
+      - 'deploy/**'
+      - '.github/workflows/verify.yml'
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Format, test and build
+        run: |
+          node --check web/app.js
+          node scripts/verify-reconnect.mjs
+          cargo fmt --check
+          cargo test --locked --features wss-probe
+          cargo build --locked --features wss-probe --bin bdn-wss-probe
+          cargo build --release --locked
+      - name: Test project collaboration, enrollment and named terminal relay
+        run: |
+          cargo test --locked --features advanced,collab-cli,terminal-cli
+          cargo build --locked --features advanced,collab-cli,terminal-cli --bin bdn-collab --bin bdn --bin bdn-terminal
+          python3 scripts/verify-collaboration.py target/debug/bdn-collab target/debug/bdn
+          python3 scripts/verify-expose.py target/debug/bdn-collab target/debug/bdn
+          python3 scripts/verify-recovery.py target/debug/bdn-collab target/debug/bdn
+          python3 scripts/verify-enrollment.py target/debug/bdn-collab
+          python3 scripts/verify-terminal.py target/debug/bdn-terminal
+      - name: Fetch the pinned meow-rs test fixture
+        run: |
+          asset=meow-v0.29.0-x86_64-unknown-linux-musl
+          curl --fail --location --silent --show-error --max-time 90 \
+            "https://github.com/meow-rs/meow-rs/releases/download/v0.29.0/$asset.tar.gz" -o meow.tar.gz
+          echo '92fe902cca5e95799af02a42fcda9a4f9195aa61ec126057b51b15a8d2116ca2  meow.tar.gz' | sha256sum -c
+          tar xzf meow.tar.gz --strip-components=1 "$asset/meow"
+      - name: Test authenticated Wisp through real meow-rs
+        run: |
+          python3 -m venv .verify
+          .verify/bin/pip install 'websockets>=15,<16'
+          .verify/bin/python scripts/verify-route-wire.py target/release/better-dot-net ./meow
+          .verify/bin/python scripts/verify-wss-probe.py target/debug/bdn-wss-probe
+      - name: Test browser recovery in a local fixture
+        env:
+          CHROMIUM: bundled
+        run: |
+          .verify/bin/pip install 'aiohttp==3.14.5' 'playwright==1.62.0'
+          .verify/bin/python -m playwright install --with-deps --only-shell chromium
+          .verify/bin/python scripts/verify-browser-fixture.py target/release/better-dot-net ./meow
+      - name: Test independent Basic with bundled meow-rs and literal IP
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y libnss3-tools
+          stage="$(mktemp -d)"
+          (cd "$stage" && apt-get download caddy && dpkg-deb -x ./caddy_*.deb caddy)
+          BDN_TEST_CADDY="$stage/caddy/usr/bin/caddy" python3 scripts/verify-collaboration.py target/debug/bdn-collab target/debug/bdn
+          .verify/bin/pip install 'ziglang==0.15.2'
+          printf '%s\n' '#!/bin/sh' "exec \"$PWD/.verify/bin/python\" -m ziglang cc -target x86_64-linux-gnu.2.34 \"\$@\"" > "$stage/zig-cc"
+          chmod +x "$stage/zig-cc"
+          CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER="$stage/zig-cc" \
+            cargo build --locked --release --target x86_64-unknown-linux-gnu --bin better-dot-net
+          bash deploy/basic/package.sh target/x86_64-unknown-linux-gnu/release/better-dot-net "$stage/release" meow.tar.gz
+          .verify/bin/python scripts/verify-basic-https.py "$stage/release/basic" "$stage/caddy/usr/bin/caddy" --browser
+          CHROMIUM=bundled .verify/bin/python scripts/verify-browser-fixture.py "$stage/release/basic/bin/better-dot-net" "$stage/release/basic/bin/meow" --https-ip --release "$stage/release/basic"

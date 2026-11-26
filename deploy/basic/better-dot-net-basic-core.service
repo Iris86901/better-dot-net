@@ -1,0 +1,29 @@
+[Unit]
+Description=Better Dot Net Basic meow-rs routing core
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=bdnbasic
+Group=bdnbasic
+StateDirectory=better-dot-net-basic
+StateDirectoryMode=0700
+Environment=STATE_DIR=/var/lib/better-dot-net-basic
+Environment=MEOW_BIN=/opt/better-dot-net-basic/current/bin/meow
+Environment=MEOW_SOCKS=127.0.0.1:17990
+Environment=MEOW_API=127.0.0.1:19190
+EnvironmentFile=/etc/better-dot-net-basic/environment
+ExecStartPre=/opt/better-dot-net-basic/current/bin/better-dot-net --prepare-meow
+ExecStart=/opt/better-dot-net-basic/current/bin/meow --no-external-plugins -d /var/lib/better-dot-net-basic -f /var/lib/better-dot-net-basic/meow.yaml
+UMask=0077
+Restart=on-failure
+RestartSec=2s
+MemoryMax=128M
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+CapabilityBoundingSet=

@@ -1,0 +1,48 @@
+{
+    https_port 8443
+    admin off
+    auto_https disable_redirects
+    servers {
+        protocols h1 h2
+    }
+}
+
+http://proxy.example.com {
+    redir https://{host}{uri} 308
+}
+
+https://proxy.example.com:8443 {
+    encode zstd gzip
+
+    header {
+        -Server
+        -Alt-Svc
+        X-Robots-Tag "noindex, nofollow"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "no-referrer"
+    }
+
+    @immutable path /assets/*
+    header @immutable Cache-Control "public, max-age=604800, immutable"
+
+    @uiAssets path /app.js /styles.css /favicon.svg /lifecycle.js
+    header @uiAssets Cache-Control "no-cache"
+
+    @sw path /sw.js
+    header @sw {
+        Cache-Control "no-cache"
+        Service-Worker-Allowed "/"
+    }
+
+    @staticAssets path /assets/* /sw.js /app.js /styles.css /favicon.svg /lifecycle.js
+    handle @staticAssets {
+        root * /opt/dot-proxy/web
+        file_server
+    }
+
+    handle {
+        reverse_proxy 127.0.0.1:3030 {
+            flush_interval -1
+        }
+    }
+}
