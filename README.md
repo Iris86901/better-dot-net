@@ -2,18 +2,20 @@
 
 **English** · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
 
-**Runs effortlessly on a single low-spec Oracle AMD micro VPS (1 GiB RAM) at ~13 MiB resident memory** — built to solve two problems:
+[![Verify](https://github.com/Iris86901/better-dot-net/actions/workflows/verify.yml/badge.svg)](https://github.com/Iris86901/better-dot-net/actions/workflows/verify.yml) [![Release](https://img.shields.io/github/v/release/Iris86901/better-dot-net)](https://github.com/Iris86901/better-dot-net/releases)
+
+A tiny self-hosted gateway that gives AI agents' cloud browsers, and Dot cloud hosts, a route onto the open web. **It runs on a single low-spec Oracle AMD micro VPS (1 GiB RAM) at ~13 MiB resident memory** and solves two problems:
 
 1. **Let any AI Agent's cloud browser access the open web through a proxy** (Basic)
-2. **Let a Dot cloud host communicate externally and expose public services (currently still affected by cloud-host auto-shutdown)** (Advanced)
+2. **Let a Dot cloud host communicate externally and expose public services** (Advanced)
 
 > Basic Server, Advanced Server, and the static Agent Client are completely decoupled and released independently on [GitHub Releases](../../releases). Upgrading any module preserves credentials and connectivity.
 
 ---
 
-## Basic: Web Proxy That Hides Agent Environment Differences
+## Basic: A Web Proxy for Agent Cloud Browsers
 
-Hosted purely on your VPS — **completely unaffected when a Dot cloud host sleeps or shuts down**. Verified on **Dot, Muse, and Hark** for accessing social platforms and search engines, with target-site cookies isolated locally in each browser.
+Hosted purely on your VPS — **completely unaffected when a Dot cloud host sleeps or shuts down**. Tested with the cloud browsers of **Dot, Muse, and Hark** on major social platforms and search engines, with target-site cookies isolated locally in each browser.
 
 ### Quick Start: What You Need
 
@@ -98,6 +100,17 @@ Point-in-time observations on a low-spec Oracle Linux x86-64 AMD micro VPS (2 vC
   - Full live stack (Basic + Advanced): `better-dot-net` **7.1 MiB**, `meow-rs` **4.9 MiB**, `bdn-collab` **5.2 MiB** (**17.2 MiB total** across all three Rust cores, `0.0%` idle CPU).
 - **Relay latency** (isolated loopback benchmark on the same micro VPS): Wisp + `meow-rs` 24/24 succeeded, **p50 = 1.41 ms**, p95 = 10.18 ms; short echo during concurrent transfer **3.11 ms**.
 - **Dot WSS long-lived connection test (2026-11-26)**: Dot connected to public WSS through its managed HTTPS egress proxy with 15 s heartbeats and **stayed up for a full 60 minutes without dropping** (240 matching Pongs over 60 min 17 s before we stopped the test manually—not a disconnect, 0 drops / 0 reconnects; the direct VPS control likewise stayed up for 60 min 45 s until stopped). After a deliberate close, reconnecting with the same credential took **4.05 s**.
+
+---
+
+## Security
+
+- **Access control**: the Basic gateway sits behind one Access Key, with HMAC-signed session cookies.
+- **Credentials stored as digests**: the VPS keeps only SHA-256 digests of node credentials, never the raw tokens; each invite code is single-use.
+- **SSRF protection**: outbound connections through the gateway and tunnel are checked against an SSRF policy that blocks private, link-local, and cloud metadata addresses (e.g. `169.254.169.254`).
+- **Private by default**: `bdn expose` services stay private unless you add `--public` or `--token`, and the Owner can remove any service or revoke any node at any time.
+
+Found a security issue? Please open an issue without exploit details and we will arrange a private channel.
 
 ---
 

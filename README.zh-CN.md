@@ -2,18 +2,20 @@
 
 [English](README.md) · **简体中文** · [日本語](README.ja.md)
 
-**低配甲骨文 AMD 小鸡（1 GiB 内存）即可流畅运行，核心常驻仅 ~13 MiB** —— 解决两个问题：
+[![Verify](https://github.com/Iris86901/better-dot-net/actions/workflows/verify.yml/badge.svg)](https://github.com/Iris86901/better-dot-net/actions/workflows/verify.yml) [![Release](https://img.shields.io/github/v/release/Iris86901/better-dot-net)](https://github.com/Iris86901/better-dot-net/releases)
+
+一个轻量的自托管网关，让 AI Agent 的云浏览器和 Dot 云主机都能顺畅连上开放网络。**一台低配甲骨文 AMD 小鸡（1 GiB 内存）即可运行，核心常驻仅 ~13 MiB**，解决两个问题：
 
 1. **让 Agent 的云浏览器能够通过代理自由访问网站**（基础版）
-2. **让 Dot 的云主机可以对外通信并提供公网服务（目前还受云主机自动关机影响）**（进阶版）
+2. **让 Dot 的云主机可以对外通信并提供公网服务**（进阶版）
 
 > 基础版服务端、进阶版服务端、Agent 客户端三大模块完全解耦，均在 [GitHub Releases](../../releases) 独立发布与升级，升级任一模块均保留已有凭据与通信能力。
 
 ---
 
-## 基础版：网页代理，屏蔽不同 Agent 环境差异
+## 基础版：面向 Agent 云浏览器的网页代理
 
-纯 VPS 托管，**完全不受 Dot 等云主机休眠或自动关机影响**。实测 **Dot、Muse、Hark** 均可直接访问主流社交平台与搜索引擎，目标站 Cookie 留在各自浏览器本地，多平台天然隔离。
+纯 VPS 托管，**完全不受 Dot 等云主机休眠或自动关机影响**。已用 **Dot、Muse、Hark** 的云浏览器实测访问主流社交平台与搜索引擎，目标站 Cookie 留在各自浏览器本地，多平台天然隔离。
 
 ### 快速入门：需要准备什么？
 
@@ -98,6 +100,17 @@ flowchart LR
   - 基础版 + 进阶版全套线上常驻实测：`better-dot-net` **7.1 MiB**、`meow-rs` **4.9 MiB**、`bdn-collab` **5.2 MiB**，三套 Rust 核心合计 **17.2 MiB**，空载 CPU `0.0%`。
 - **转发延迟**（同款小机隔离回环基准）：Wisp + `meow-rs` 24/24 成功，**p50 = 1.41 ms**，p95 = 10.18 ms；并发传输中短包延迟 **3.11 ms**。
 - **Dot WSS 长连接实测（2026-11-26）**：Dot 经平台 HTTPS 出口代理连至公网 WSS，每 15 秒一次心跳，**连续跑满 60 分钟全程未断线**（实测 60 分 17 秒、240 次匹配 Pong 后主动结束测试，并非断线，0 断线 / 0 重连；对照 VPS 直连同样跑满 60 分 45 秒未断后结束）；随后主动断开，使用原凭据 **4.05 秒**完成重连。
+
+---
+
+## 安全设计
+
+- **访问控制**：基础版网关由一个访问密钥（Access Key）保护，会话 Cookie 经 HMAC 签名。
+- **凭据只存摘要**：VPS 只保存节点凭据的 SHA-256 摘要，不保存原始令牌；每个邀请码仅能使用一次。
+- **SSRF 防护**：经网关与隧道发出的连接都会经过 SSRF 策略检查，拦截内网、链路本地与云元数据地址（如 `169.254.169.254`）。
+- **默认私有**：`bdn expose` 发布的服务默认不公开，需显式加 `--public` 或 `--token`；Owner 可随时移除任意服务或撤销任意节点。
+
+发现安全问题？请先提一个不含利用细节的 issue，我们会另行安排私下沟通渠道。
 
 ---
 
