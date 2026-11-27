@@ -229,11 +229,12 @@ fn engine_delayed_claim_and_bounded_plan_b_followup_reminders() {
             .changed
     );
     assert_eq!(
-        engine::evaluate("dot-a", &node, false, t0 + 50, &cfg).eligibility_reason,
+        engine::evaluate("dot-a", &node, false, t0 + 20 + cfg.debounce_secs - 1, &cfg)
+            .eligibility_reason,
         EligibilityReason::Debouncing
     );
 
-    // Crosses 90s debounce -> creates wave 0 incident and dispatches first webhook.
+    // Crosses the debounce -> creates wave 0 incident and dispatches first webhook.
     let t_inc = t0 + 20 + cfg.debounce_secs;
     let out = engine::tick(&mut node, false, t_inc, &cfg, &mut next_id).unwrap();
     let wave0 = out.dispatch.expect("wave 0 must dispatch");
@@ -358,7 +359,11 @@ fn engine_delayed_claim_and_bounded_plan_b_followup_reminders() {
 
 #[test]
 fn engine_enforces_cooldown_and_24h_budget() {
-    let cfg = PolicyConfig::default();
+    // Short cooldown so the per-window cap is reachable inside one window.
+    let cfg = PolicyConfig {
+        cooldown_secs: 60,
+        ..PolicyConfig::default()
+    };
     let mut node = Node::new_pending("static-a".into(), Token::new("pair", 100), true);
     node.binding = Some(Binding {
         subject: "sub-a".into(),
@@ -372,7 +377,8 @@ fn engine_enforces_cooldown_and_24h_budget() {
     };
 
     let mut t = 10_000u64;
-    for attempt in 1..=3 {
+    let max = cfg.max_claims_per_window;
+    for attempt in 1..=max {
         // Offline -> debounce -> incident -> claim -> online
         engine::tick(&mut node, false, t, &cfg, &mut next_id).unwrap();
         t += cfg.debounce_secs;
@@ -390,22 +396,22 @@ fn engine_enforces_cooldown_and_24h_budget() {
         // Back online
         t += 10;
         engine::tick(&mut node, true, t, &cfg, &mut next_id).unwrap();
-        if attempt < 3 {
-            // Immediately offline during 1h cooldown -> blocked by Cooldown
+        if attempt < max {
+            // Immediately offline during cooldown -> blocked by Cooldown
             t += 10;
             engine::tick(&mut node, false, t, &cfg, &mut next_id).unwrap();
             t += cfg.debounce_secs;
             let snap = engine::evaluate("dot-a", &node, false, t, &cfg);
             assert_eq!(snap.eligibility_reason, EligibilityReason::Cooldown);
             assert!(snap.retry_at.is_some());
-            // Advance past 1h cooldown and reconnect/disconnect cleanly
+            // Advance past cooldown and reconnect/disconnect cleanly
             t += cfg.cooldown_secs;
             engine::tick(&mut node, true, t, &cfg, &mut next_id).unwrap();
             t += 10;
         }
     }
 
-    // 4th outage within 24h after cooldown -> blocked by DailyLimit!
+    // Next outage within 24h after cooldown -> blocked by DailyLimit!
     t += cfg.cooldown_secs + 10;
     engine::tick(&mut node, false, t, &cfg, &mut next_id).unwrap();
     t += cfg.debounce_secs;
