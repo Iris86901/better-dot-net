@@ -4,56 +4,68 @@
 
 [![Verify](https://github.com/Iris86901/better-dot-net/actions/workflows/verify.yml/badge.svg)](https://github.com/Iris86901/better-dot-net/actions/workflows/verify.yml) [![Release](https://img.shields.io/github/v/release/Iris86901/better-dot-net)](https://github.com/Iris86901/better-dot-net/releases)
 
-AI エージェントのクラウドブラウザと Dot クラウドホストを、オープンな Web につなぐ軽量なセルフホスト型ゲートウェイです。**低スペックな Oracle AMD 小型 VPS（メモリ 1 GiB）1 台で動作し、コア常駐は約 13 MiB**。次の 2 つの課題を解決します：
+> **v0.2.0 リリース**：MCP Events による自動ウェイクアップ・自動復旧機能を標準搭載しました。Dot クラウドホストのスリープによるサービス停止を解消し、9C10G 環境で永続的な公衆サービスを安定提供できます。
 
-1. **AI エージェントのクラウドブラウザからプロキシ経由で Web サイトへ自由にアクセスできるようにする**（Basic）
-2. **Dot クラウドホストから外部通信および公衆サービス公開を行えるようにする**（Advanced）
+低スペックな Oracle AMD 小型 VPS 1 台（メモリ 1 GiB、Rust コア 3 プロセス合計 **約 17.6 MiB**）で動作し、Dot クラウドホストを公衆公開・自動復旧対応の永続サーバーへ変える軽量セルフホスト型ゲートウェイです：
 
-> Basic サーバー・Advanced サーバー・静的 Agent クライアントは完全分離され、[GitHub Releases](../../releases) から個別に更新可能。いずれのモジュールを更新しても既存の資格情報と通信を維持します。
+1. **Dot クラウドホストを公衆開放し、永続的に外部サービスを公開してスリープ後も MCP で自動復旧させる**（Advanced・中核機能）
+2. **AI エージェントのクラウドブラウザ向け Web プロキシを併載**（Basic・純 VPS 稼働、単独導入も可）
+
+> Advanced サーバー・Basic サーバー・静的 Agent クライアントは完全分離され、[GitHub Releases](../../releases) から個別に更新可能。いずれのモジュールを更新しても既存の資格情報と通信を維持します。
 
 ---
 
-## Basic：エージェントのクラウドブラウザ向け Web プロキシ
+## Advanced：Dot クラウドホストの公衆開放・永続サービス公開と MCP 自動復旧
 
-純 VPS 稼働のため、**Dot クラウドホストの自動停止・スリープの影響を一切受けません**。**Dot・Muse・Hark** のクラウドブラウザで主要 SNS と検索エンジンへのアクセスを実測済み。対象サイトの Cookie は各ブラウザ内のみに保存され、マルチプラットフォームで完全分離されます。
+**複数 Dot 対応**。**VPS を業務アプリから完全に透過にし、`bdn` を統一ネットワーク基盤にする**ことで、低スペックな 1 GiB 小型 VPS を入口にしながら **9C10G** クラウドホストの計算資源をフル活用し、さらに **MCP Events 自動ウェイクアップ**でスリープ後の無人復旧を実現します。
 
-### クイックスタート：必要なもの
+> **v0.2.0 自動復旧の実測記録（2026-11-27）**：ChatGPT CIMD OAuth（Client ID / Secret 設定不要）で連携。Dot ノード停止＋45 秒の切断デバウンス後、Webhook は **1 秒**で OpenAI に受理（HTTP 200）され、**39 秒**後に ChatGPT が自動で Dot を起動して `claim_recovery` を完了、バックエンドを再起動（起動マーカーが `850d70326313` → `facf050ff32a` に更新）して公衆アクセスを自動復旧しました。MCP 復旧有効時の Rust コア 3 プロセス合計常駐メモリも **17.6 MiB**（アイドル CPU `0.0%`）です。
 
-1. **パブリック IP を持つ低スペック VPS 1 台**（Oracle Cloud 無料枠の AMD 1 GiB インスタンスで十分）：HTTPS 入口には **Caddy** を推奨（**後から Advanced へ拡張する予定がある場合、Basic の段階から Caddy を使うと移行が圧倒的に楽になります**）。
-2. **ドメイン名（Dot のみ必要）**：実測で **Dot** は裸 IP で証明書エラーとなるためドメイン＋信頼済み HTTPS が必要。**Hark・Muse** はドメインなしの裸 IP HTTPS でも動作確認済み（信頼済み IP 証明書は必要。詳細は [IP 要件](deploy/basic/README.md#access-by-literal-ip)）。
-3. **上流プロキシ（任意）**：初期設定のまま VPS 直結で使え、パネルからノード貼り付けや Clash YAML 購読を無停止で切替可能。
+### 自動復旧の実測記録（`Recovery Lab`）
 
-### 手に入るもの
+| 切断・スリープ前（`850d70326313` · `13:27:04 UTC`） | MCP 自動起動・再起動後（`facf050ff32a` · `13:59:19 UTC`） |
+| :---: | :---: |
+| ![切断前の Recovery Lab オンライン表示](assets/dot-recovery-before.png) | ![MCP 自動復旧後の Recovery Lab オンライン表示](assets/dot-recovery-after.png) |
 
-- **HTTPS URL 1 本 ＋ アクセスキー 1 つ**。
-- エージェントに渡すだけで、クライアント導入・拡張機能・システムプロキシ変更なしですぐに Web を自由に利用できます。
+### クイックスタート：4 ステップで永続公開と自動復旧を設定
+
+1. **VPS に Advanced サーバーをデプロイ**（[デプロイガイド](deploy/advanced/README.md)）：
+   - Caddy を動かす低スペック公衆 VPS 1 台に、制御・認証ドメイン（例：`https://collab.example.com` — **後続の MCP 復旧もそのまま配下の `/mcp` を共用するため追加ドメイン不要**）と、サービス公開用のワイルドカード DNS・TLS 証明書（例：`*.svc.example.com`）を設定します。
+   - Dot ノード用の **認証 URL** と **ワンタイム招待コード** を発行します。
+2. **Dot に初回セットアップ指示を送信**（リセット・再起動に強い **`/workspace/shared/`** 配下への配置を推奨）：
+   ```text
+   https://github.com/Iris86901/better-dot-net/releases から最新の静的バイナリ bdn-linux-x86_64 を
+   安全な永続ディレクトリ /workspace/shared/better-dot-net/bdn に配置して実行権限を付与し、順に実行してください：
+   1. bdn join <認証URL> <ワンタイム招待コード>（同ディレクトリに config.json と 0600 の credentials を永続保存。更新時は bdn 上書きのみ）
+   2. bdn recovery enable を実行し、生成された /mcp アドレスと 10 分有効なワンタイム認可コードを返してください（ノードの長期資格情報は出力しないこと）。
+   ```
+3. **ChatGPT 側で MCP を設定（初回のみ）**：
+   - ChatGPT のカスタム MCP コネクタ設定に、Dot から返された `/mcp` URL を入力し、認証方式で **OAuth** を選択します（ChatGPT CIMD 利用時は Client ID / Client Secret 空欄のままで可）。
+   - VPS の信頼済み HTTPS 認可ページで**ワンタイム認可コード**を入力すれば連携完了です。
+4. **サービス公開と自動復旧の運用**：
+   - 接続後は `bdn` がハートビート・自動再接続・サービス復旧を担い、権限制御は VPS が一元実行します：
+     - **公衆サービス直接公開**：Dot 内の Web/API はローカル待受のままで `bdn expose <サービス名>:<ポート>` により独立サブドメインへ公開（グローバル一意で上書き不可、既定非公開、`--public`/`--token` 対応、Owner はいつでも任意停止・失効可能）。
+     - **透過アウトバウンド代理**：`bdn proxy` / `bdn tunnel --proxy 127.0.0.1:7890` でローカル混合 HTTP / CONNECT / SOCKS5 プロキシを提供。業務アプリは通常の環境変数だけで VPS アドレスを意識せず通信可能。
+   - あとは Dot に**自律的な公衆サービス公開と、固定のローカル起動スクリプトに紐づけた MCP ウェイクイベント（`bdn.recovery_requested`）の購読**を指示するだけです。クラウドホストがスリープ・切断されると、VPS が WSS 切断を検知（45 秒デバウンス）し、MCP 経由で自動的に Dot を起動してサービスを復旧します。
+
+### MCP 設定と OAuth CIMD 認可
+
+| ChatGPT カスタム MCP 設定（`/mcp` + OAuth） | Better Dot Net 認可ページ（ワンタイムコード入力） |
+| :---: | :---: |
+| ![ChatGPT カスタム MCP 設定画面](assets/dot-mcp-config.jpg) | ![Better Dot Net Advanced CIMD OAuth 認可画面](assets/dot-mcp-authorize.jpg) |
+
+→ [Advanced デプロイガイド](deploy/advanced/README.md) · [MCP 自動復旧ガイド](deploy/advanced/AUTORECOVERY.md) · [ノード管理 (EN)](deploy/advanced/ENROLLMENT.md) · [节点管理 (中文)](deploy/advanced/ENROLLMENT.zh-CN.md) · [Dot クライアント導入](deploy/advanced/RECOVERY.zh-CN.md)
+
+---
+
+## 併載モジュール：エージェントのクラウドブラウザ向け Web プロキシ（Basic）
+
+純 VPS 稼働の独立した Web プロキシも同梱しています。**Dot クラウドホストの自動停止・スリープの影響を一切受けず**、通常稼働時の常駐メモリは約 **13 MiB**。**Dot・Muse・Hark** のクラウドブラウザで主要 SNS と検索エンジンへのアクセスを実測済みで、対象サイトの Cookie は各ブラウザ内のみに分離保存されます。
+
+- **必要なもの**：**Caddy** を動かす低スペック公衆 VPS 1 台（後から Advanced へ拡張する際もそのまま移行可能）。**Dot** は裸 IP で証明書エラーとなるためドメイン＋信頼済み HTTPS が必要ですが、**Hark・Muse** は裸 IP HTTPS でも動作確認済み（信頼済み IP 証明書が必要。詳細は [IP 要件](deploy/basic/README.md#access-by-literal-ip)）。上流プロキシは任意で、初期設定のまま VPS 直結で使えるほか、パネルからノード貼り付けや Clash YAML 購読を無停止で切替可能です。
+- **使い方**：デプロイ後に得られる **HTTPS URL 1 本 ＋ アクセスキー 1 つ** をエージェントに渡すだけで、クライアント導入・拡張機能・システムプロキシ変更なしにすぐ利用できます。
 
 → [Basic デプロイガイド (EN)](deploy/basic/README.md) · [基础版部署指南 (中文)](deploy/basic/README.zh-CN.md)
-
----
-
-## Advanced：Dot クラウドホストの高速入出力と公衆サービス公開
-
-**複数 Dot 対応**。**VPS を業務アプリから完全に透過にし、`bdn` を統一ネットワーク基盤にする**ことで、低スペックな Oracle AMD 小型 VPS を入口にしながら **9C10G** クラウドホストの計算資源を余すことなく活用できます。
-
-### クイックスタート：必要なもの
-
-1. **Caddy を動かす低スペック公衆 VPS 1 台**：専用制御ドメイン（例：`collab.example.com`）、サービス公開時はワイルドカード DNS と証明書（例：`*.svc.example.com`）。
-2. **Dot クラウドホスト**（複数台対応）。
-
-### 手に入るもの
-
-- **認証 URL 1 つ ＋ ワンタイム招待コード 1 つ**。
-- Dot に渡すと、[GitHub Releases](../../releases) から静的 `bdn-linux-x86_64` を取得し、**消失防止のため `/workspace` 配下**（例：`/workspace/shared/better-dot-net/bdn`）に配置して `bdn join` を 1 回実行するだけで認証完了（同ディレクトリに `config.json` と `0600` の `credentials` を保存。更新はバイナリ上書きのみ）。
-- 接続後は `bdn` がハートビート・自動再接続・サービス復旧を担い、権限制御は VPS が一元実行します：
-  - **透過アウトバウンド代理**：`bdn proxy` / `bdn tunnel --proxy 127.0.0.1:7890` でローカル混合 HTTP / CONNECT / SOCKS5 プロキシを提供。業務アプリは通常の環境変数だけで VPS アドレスを意識せず通信可能。
-  - **サービス直接公開**：Dot 内の Web/API はローカル待受のままで `bdn expose <サービス名>:<ポート>` により独立サブドメインへ公開（グローバル一意で上書き不可、既定非公開、`--public`/`--token` 対応、Owner はいつでも任意停止・失効可能）。
-
-> **実測状況と既知の制約**：Dot が 9C10G クラウドホスト上で自律的にアプリをデプロイし公衆公開・外部到達できることを実測済みです。**現在の唯一の制約は、アイドル時などに Dot クラウドホストが自動停止・スリープする場合がある点です**（復帰・再接続後はサービス自動復旧。Basic は純 VPS のため影響なし）。
-
-![Dot が自律的にデプロイし Better Dot Net 経由で一般公開した Web サービスの例](assets/dot-expose-demo.jpg)
-
-→ [Advanced デプロイガイド](deploy/advanced/README.md) · [ノード管理 (EN)](deploy/advanced/ENROLLMENT.md) · [节点管理 (中文)](deploy/advanced/ENROLLMENT.zh-CN.md) · [Dot クライアント導入](deploy/advanced/RECOVERY.zh-CN.md)
 
 ---
 
@@ -62,15 +74,16 @@ AI エージェントのクラウドブラウザと Dot クラウドホストを
 ```mermaid
 flowchart LR
     subgraph Client["ユーザー / Agent"]
-        Browser["Web プロキシシェル (JS + Scramjet WASM)"]
         Visitor["一般アクセス (HTTPS / WS)"]
+        MCP["ChatGPT (OAuth CIMD / MCP Events)"]
+        Browser["Web プロキシシェル (JS + Scramjet WASM)"]
     end
 
     subgraph VPS["低スペック VPS (1 GiB)"]
         Caddy["Caddy (HTTPS / ワイルドカード)"]
+        Collab["bdn-collab (Rust トンネル + MCP 復旧)"]
         Basic["better-dot-net (Rust ゲートウェイ)"]
         Meow["meow-rs (Rust 上流転送)"]
-        Collab["bdn-collab (Rust トンネル核)"]
     end
 
     subgraph DotHost["Dot クラウドホスト (9C10G)"]
@@ -78,16 +91,17 @@ flowchart LR
         App["ローカルアプリ (VPS 透過)"]
     end
 
-    Browser -- "WSS / Wisp" --> Caddy
     Visitor -- "*.svc.example.com" --> Caddy
-    Caddy --> Basic
-    Basic -- "直結 / Clash 購読" --> Meow
+    MCP <-- "/mcp (起動 / OAuth)" --> Caddy
+    Browser -- "WSS / Wisp" --> Caddy
     Caddy --> Collab
     BDN <-- "単一 WSS 双方向多重化" --> Collab
     App <-- "ローカル代理 / ポート公開" --> BDN
+    Caddy --> Basic
+    Basic -- "直結 / Clash 購読" --> Meow
 ```
 
-Basic ゲートウェイ（`better-dot-net`）および Advanced 一式（`bdn-collab`・静的 musl 版 `bdn`・`bdn-terminal`。単一 WSS 双方向多重化、ワイルドカード対応リバースプロキシ、ローカル HTTP/SOCKS5 プロキシを含む）を **Rust** で実装しており、1 GiB の小型 VPS でも全コア常駐を 20 MiB 未満に抑えています。ブラウザ側のマルチタブ UI と Service Worker はバニラ JavaScript、ページ書換と上流多プロトコル転送は上流の **Scramjet**（JS/WASM）と **meow-rs**（Rust）を基盤とし、VPS 側のノード登録補助スクリプト（`enroll.py` / `invite.py`）は外部依存ゼロの標準ライブラリ Python 3 です。
+Advanced 一式（`bdn-collab`・静的 musl 版 `bdn`・`bdn-terminal`。単一 WSS 双方向多重化、ワイルドカード対応リバースプロキシ、ローカル HTTP/SOCKS5 プロキシ、組込み OAuth 2.1 + MCP Events 自動復旧を含む）および Basic ゲートウェイ（`better-dot-net`）を **Rust** で実装しており、1 GiB の小型 VPS でも全コア常駐を 20 MiB 未満に抑えています。OAuth 2.1 は **oauth-as**（Rust）、ブラウザ側のマルチタブ UI と Service Worker はバニラ JavaScript、ページ書換と上流多プロトコル転送は **Scramjet**（JS/WASM）と **meow-rs**（Rust）を基盤とし、VPS 側のノード登録補助スクリプト（`enroll.py` / `invite.py`）は外部依存ゼロの標準ライブラリ Python 3 です。
 
 ---
 
@@ -95,20 +109,22 @@ Basic ゲートウェイ（`better-dot-net`）および Advanced 一式（`bdn-c
 
 低スペックな Oracle Linux x86-64 AMD 小型 VPS（2 vCPU / メモリ約 1 GiB）での実運用計測・分離ベンチマーク結果（高負荷ピーク値ではありません）：
 
+- **MCP 自動復旧実測（2026-11-27）**：ChatGPT CIMD OAuth（`https://chatgpt.com/oauth/client.json`）で連携。Dot ノード停止＋45 秒の切断デバウンス後、Webhook は **1 秒**で OpenAI に受理（HTTP 200）され、**39 秒**後に ChatGPT が Dot を自動起動して `claim_recovery` を完了、バックエンドを再起動（起動マーカー `850d70326313` → `facf050ff32a`）して公衆 WSS サービスを自動復旧しました。
 - **常駐メモリ**：
-  - Basic 通常稼働（3 回 RSS 平均）：`better-dot-net` **6.0 MiB** + `meow-rs` **7.2 MiB**（合計約 **13 MiB**。ブラウザ・Caddy/Nginx・Advanced を除く）。
-  - Basic + Advanced 全稼働実測：`better-dot-net` **7.1 MiB**、`meow-rs` **4.9 MiB**、`bdn-collab` **5.2 MiB**（Rust コア 3 プロセス合計 **17.2 MiB**・アイドル CPU `0.0%`）。
-- **転送レイテンシ**（同小型 VPS 分離ループバック）：Wisp + `meow-rs` 24/24 成功、**p50 = 1.41 ms**、p95 = 10.18 ms；転送中の並行短パケット応答 **3.11 ms**。
+  - 全稼働実測（Advanced + MCP 復旧有効 + Basic、2026-11-27）：`bdn-collab` **7.8 MiB**、`better-dot-net` **5.2 MiB**、`meow-rs` **4.6 MiB**（Rust コア 3 プロセス合計 **17.6 MiB**・アイドル CPU `0.0%`）。
+  - Basic 単体通常稼働（3 回 RSS 平均）：`better-dot-net` **6.0 MiB** + `meow-rs` **7.2 MiB**（合計約 **13 MiB**。ブラウザ・Caddy/Nginx・Advanced を除く）。
 - **Dot WSS 長時間接続テスト（2026-11-26）**：管理 HTTPS プロキシ経由で 15 秒間隔のハートビートを送り、**60 分間一度も切れずに完走**（60 分 17 秒・240 回の Pong を確認した時点でテストを手動終了、切断による終了ではありません・0 切断 / 0 再接続；対照の VPS 直結も 60 分 45 秒無切断のまま終了）。その後の意図的な切断からは同一資格情報で **4.05 秒**で再接続しました。
+- **Basic 転送レイテンシ**（同小型 VPS 分離ループバック）：Wisp + `meow-rs` 24/24 成功、**p50 = 1.41 ms**、p95 = 10.18 ms；転送中の並行短パケット応答 **3.11 ms**。
 
 ---
 
 ## セキュリティ
 
-- **アクセス制御**：Basic ゲートウェイはアクセスキー 1 つで保護され、セッション Cookie は HMAC で署名されます。
+- **最小権限の MCP 自動復旧**：既定で無効。10 分有効のワンタイムコードと OAuth 2.1（CIMD + PKCE S256）でノード単位に認可し、ノードの長期資格情報は露出しません。イベントには ID のみを含め（リモートシェルや任意コマンド実行なし）、単一使用の `claim_recovery`・1 時間クールダウン・24 時間最大 3 回の制限を適用します。`bdn recovery disable` は対象ノードの OAuth トークンのみを失効させ、他ノードや通常 WSS に影響しません。
 - **資格情報はダイジェストのみ保存**：VPS はノード資格情報の SHA-256 ダイジェストのみを保持し、生のトークンは保存しません。招待コードは 1 回限りです。
-- **SSRF 対策**：ゲートウェイとトンネルを経由する接続は SSRF ポリシーで検査され、プライベート・リンクローカル・クラウドメタデータのアドレス（例：`169.254.169.254`）への接続を遮断します。
 - **デフォルト非公開**：`bdn expose` のサービスは `--public` または `--token` を付けない限り非公開で、Owner はいつでもサービス削除・ノード失効が可能です。
+- **SSRF 対策**：ゲートウェイとトンネルを経由する接続は SSRF ポリシーで検査され、プライベート・リンクローカル・クラウドメタデータのアドレス（例：`169.254.169.254`）への接続を遮断します。
+- **Basic アクセス制御**：Basic ゲートウェイはアクセスキー 1 つで保護され、セッション Cookie は HMAC で署名されます。
 
 セキュリティ上の問題を見つけた場合は、悪用の詳細を含めずに issue を作成してください。非公開の連絡手段をご案内します。
 
@@ -117,5 +133,6 @@ Basic ゲートウェイ（`better-dot-net`）および Advanced 一式（`bdn-c
 ## コントリビューション・上流プロジェクトへの謝辞
 
 - Issue や PR を歓迎します。提出前に **[CONTRIBUTING.md](CONTRIBUTING.md)** · **[贡献与 PR 规范（中文）](CONTRIBUTING.zh-CN.md)** をご確認ください。
+- **[MattJackson/oauth-as](https://github.com/MattJackson/oauth-as)**：Advanced の MCP 復旧に組み込まれた OAuth 2.1（CIMD / PKCE）認可ライブラリ。
 - **[MercuryWorkshop/scramjet](https://github.com/MercuryWorkshop/scramjet)**：Basic Web プロキシのブラウザ側ランタイムおよび転送基盤。
 - **[meow-rs/meow-rs](https://github.com/meow-rs/meow-rs)**：マルチプロトコル上流プロキシおよび Clash 購読ルーティングコア。

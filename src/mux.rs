@@ -32,8 +32,8 @@ pub const INIT_WINDOW: u32 = 256 * 1024;
 const REPLENISH_THRESHOLD: u32 = INIT_WINDOW / 2;
 pub const MAX_STREAMS: usize = 64;
 const OPEN_TIMEOUT: Duration = Duration::from_secs(10);
-const KEEPALIVE_INTERVAL: Duration = Duration::from_secs(20);
-const KEEPALIVE_TIMEOUT: Duration = Duration::from_secs(60);
+const KEEPALIVE_INTERVAL: Duration = Duration::from_secs(10);
+const KEEPALIVE_TIMEOUT: Duration = Duration::from_secs(30);
 
 const KIND_OPEN: u8 = 1;
 const KIND_OPEN_OK: u8 = 2;

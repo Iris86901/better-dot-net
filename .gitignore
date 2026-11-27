@@ -10,3 +10,5 @@ docs.local/
 .DS_Store
 /.verify/
 __pycache__/
+
+/vendor/oauth-as/target/

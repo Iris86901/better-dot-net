@@ -79,7 +79,7 @@ jobs:
           Three independently upgradable modules:
 
           1. **Basic Server (`basic-linux-x86_64.tgz`)**: Browser gateway (`better-dot-net`), web runtime (`web/`), bundled `meow-rs`, systemd units, Caddyfile.
-          2. **Advanced Server (`advanced-server-linux-x86_64.tgz`)**: Multi-Dot collaboration daemon (`bdn-collab`), named terminal relay (`bdn-terminal`), `enroll.py`, `invite.py`, systemd unit + sysusers, Caddyfile.
+          2. **Advanced Server (`advanced-server-linux-x86_64.tgz`)**: Multi-Dot collaboration daemon (`bdn-collab`, with built-in opt-in MCP Events + CIMD OAuth 2.1 auto-recovery), named terminal relay (`bdn-terminal`), `enroll.py`, `invite.py`, systemd unit + sysusers, Caddyfile, `AUTORECOVERY.md`.
           3. **Agent Cloud-Computer Client (`bdn-linux-x86_64`)**: Fully static Linux x86-64 CLI binary. Place in `/workspace/shared/better-dot-net/bdn`, join once with `bdn join <origin> <invite_code>` (stores `config.json` + `0600 credentials` beside `bdn`), and overwrite the binary directly for zero-downtime upgrades.
           EOF
           )

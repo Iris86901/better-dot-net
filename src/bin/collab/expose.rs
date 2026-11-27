@@ -68,7 +68,7 @@ const BLOCKED_V6: [Ipv6Net; 12] = [
     Ipv6Net::new_assert(Ipv6Addr::new(0xff00, 0, 0, 0, 0, 0, 0, 0), 8),
 ];
 
-fn is_public_ip(ip: IpAddr) -> bool {
+pub(super) fn is_public_ip(ip: IpAddr) -> bool {
     match ip {
         IpAddr::V4(v4) => !BLOCKED_V4.iter().any(|net| net.contains(&v4)),
         IpAddr::V6(v6) => {
@@ -245,6 +245,20 @@ fn write_private_json(path: &Path, data: &[u8]) -> Result<()> {
 }
 
 impl ExposeHub {
+    #[cfg(test)]
+    pub(super) fn recovery_fixture(dir: &Path) -> Arc<Self> {
+        Arc::new(Self {
+            domain: "service.example.com".into(),
+            egress_enabled: false,
+            egress_allow_loopback_test: false,
+            reserved: BTreeSet::new(),
+            store_path: dir.join("services.json"),
+            services: RwLock::new(BTreeMap::new()),
+            tunnels: RwLock::new(HashMap::new()),
+            next_gen: AtomicU64::new(1),
+        })
+    }
+
     pub(super) fn from_env(state_dir: &Path) -> Result<Option<Arc<Self>>> {
         let egress_enabled = matches!(
             std::env::var("BDN_EGRESS_ENABLED").as_deref(),
@@ -334,7 +348,7 @@ impl ExposeHub {
         write_private_json(&self.store_path, &raw).map_err(|_| Failure::Internal)
     }
 
-    fn node_online(&self, node: &str) -> bool {
+    pub(super) fn node_online(&self, node: &str) -> bool {
         self.tunnels
             .read()
             .unwrap_or_else(|p| p.into_inner())

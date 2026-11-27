@@ -1,4 +1,6 @@
 //! Opt-in collaboration daemon. Its cleartext listener is restricted to loopback.
+#[path = "collab/auto_recovery.rs"]
+mod auto_recovery;
 #[path = "collab/expose.rs"]
 mod expose;
 #[path = "collab/recovery.rs"]
@@ -49,6 +51,7 @@ type App = Arc<Core>;
 struct Core {
     owner: String,
     recovery: Option<recovery::Settings>,
+    auto_recovery: Option<Arc<auto_recovery::Recovery>>,
     expose: Option<Arc<expose::ExposeHub>>,
     creds: Vec<(String, [u8; 32])>,
     project: Mutex<ProjectStore>,
@@ -56,7 +59,7 @@ struct Core {
     transfers: Arc<Semaphore>,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 enum Failure {
     Unauthorized,
     Rejected,
@@ -138,6 +141,7 @@ impl Core {
         Ok(Arc::new(Self {
             owner: owner.clone(),
             recovery: recovery::Settings::from_env()?,
+            auto_recovery: auto_recovery::Recovery::open(space)?,
             expose: expose::ExposeHub::from_env(space)?,
             creds,
             project: Mutex::new(ProjectStore::open(space, &owner)?),
@@ -313,6 +317,7 @@ async fn action(State(app): State<App>, headers: HeaderMap, body: Body) -> Reply
         }
         other_op => {
             let expose_hub = app.expose.clone();
+            let auto_recovery = app.auto_recovery.clone();
             let data = disk(app, move |p| {
                 let data = match other_op {
                     Operation::Grant { node } => {
@@ -323,6 +328,12 @@ async fn action(State(app): State<App>, headers: HeaderMap, body: Body) -> Reply
                         p.revoke(&actor, &node)?;
                         if let Some(hub) = expose_hub.as_ref() {
                             hub.revoke_node(&node);
+                        }
+                        if let Some(recovery) = &auto_recovery
+                            && let Err(error) = recovery.revoke_sync(&node)
+                        {
+                            // Membership is already revoked, so no access is granted even if storage is unavailable.
+                            tracing::warn!(%error, "could not clear revoked recovery state");
                         }
                         json!({"ok":true})
                     }
@@ -519,6 +530,12 @@ async fn main() -> Result<()> {
     };
     let app = if core.recovery.is_some() {
         app.merge(recovery::routes())
+    } else {
+        app
+    };
+    let app = if core.auto_recovery.is_some() {
+        let _worker = tokio::spawn(auto_recovery::worker(core.clone()));
+        app.merge(auto_recovery::routes())
     } else {
         app
     };

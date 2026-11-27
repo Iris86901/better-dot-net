@@ -18,13 +18,22 @@ collab.example.com {
 		method GET
 		path /v1/tunnel
 	}
-	@recovery {
+	@enrollment {
 		path /agent /agent/invite
 	}
 
-	handle @recovery {
+	handle @enrollment {
 		reverse_proxy 127.0.0.1:9300
 	}
+	# Optional: uncomment only after enabling BDN_AUTORECOVERY_ORIGIN on this
+	# dedicated Advanced origin. The default preserves existing routes.
+	# @automatic_recovery {
+	# 	path /mcp /oauth/authorize /oauth/token /.well-known/oauth-authorization-server /.well-known/oauth-protected-resource /.well-known/oauth-protected-resource/mcp /v1/recovery/enable /v1/recovery/status /v1/recovery/disable /v1/recovery/pause /v1/recovery/resume
+	# }
+	# handle @automatic_recovery {
+	# 	reverse_proxy 127.0.0.1:9300
+	# }
+
 	handle @tunnel {
 		reverse_proxy 127.0.0.1:9300 {
 			flush_interval -1

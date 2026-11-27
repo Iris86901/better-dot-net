@@ -430,10 +430,10 @@ const APP_HTML: &str = r#"<!doctype html>
   <title>Better Dot Net</title>
   <link rel="stylesheet" href="/styles.css?v=12" />
   <script src="/lifecycle.js?v=7"></script>
-  <script src="/assets/rt/engine.js?v=2"></script>
+  <script src="/assets/rt/engine.js?v=3"></script>
   <script src="/assets/rt/controller.api.js?v=2"></script>
   <script src="/assets/rt/transport.js?v=2"></script>
-  <script defer src="/app.js?v=17"></script>
+  <script defer src="/app.js?v=18"></script>
 </head>
 <body>
   <button id="btn-zen-exit" class="zen-exit" type="button">Show Toolbar (Esc)</button>

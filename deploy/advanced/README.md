@@ -50,3 +50,5 @@ sudo /opt/better-dot-net-advanced/bin/bdn 127.0.0.1:9300 /etc/better-dot-net-adv
 ```
 
 客户端接入与日常使用见 [Dot 接入与使用](RECOVERY.zh-CN.md)。
+
+可选：[通过 MCP Events 实现 Dot 持久化服务与自动唤醒恢复](AUTORECOVERY.md)（复用同一控制域名下的 `/mcp`，默认关闭）。

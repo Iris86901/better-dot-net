@@ -500,8 +500,8 @@ function normalizeTabSession(data, shellOrigin) {
         transport,
         config: {
           prefix: PROXY_PREFIX,
-          scramjetPath: "/assets/rt/engine.js?v=2",
-          injectPath: "/assets/rt/controller.inject.js?v=2",
+          scramjetPath: "/assets/rt/engine.js?v=3",
+          injectPath: "/assets/rt/controller.inject.js?v=3",
           wasmPath: "/assets/rt/engine.wasm?v=2",
         },
         scramjetConfig: {

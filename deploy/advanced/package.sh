@@ -23,14 +23,15 @@ done
 mkdir -p -- "$out"
 tmp=$(mktemp -d "$out/.stage.XXXXXXXX")
 trap 'rm -rf -- "$tmp"' EXIT
-install -d "$tmp/tree/bin" "$tmp/tree/sbin"
+install -d "$tmp/tree/bin" "$tmp/tree/sbin" "$tmp/tree/licenses/oauth-as"
 install -m 0755 "$binaries/bdn-collab" "$binaries/bdn-terminal" "$tmp/tree/bin/"
+install -m 0644 "$here/../../vendor/oauth-as/LICENSE-MIT" "$here/../../vendor/oauth-as/LICENSE-APACHE" "$tmp/tree/licenses/oauth-as/"
 install -m 0755 "$here/enroll.py" "$here/invite.py" "$tmp/tree/sbin/"
-install -m 0644 "$here/bdn-collab.service" "$here/bdn-collab.sysusers" "$here/Caddyfile" "$here/ENROLLMENT.md" "$here/README.md" "$here/RECOVERY.zh-CN.md" "$here/../terminal-plan.md" "$tmp/tree/"
+install -m 0644 "$here/bdn-collab.service" "$here/bdn-collab.sysusers" "$here/Caddyfile" "$here/ENROLLMENT.md" "$here/README.md" "$here/RECOVERY.zh-CN.md" "$here/AUTORECOVERY.md" "$here/restore-dot.example.sh" "$here/../terminal-plan.md" "$tmp/tree/"
 (
   cd "$tmp/tree"
-  sha256sum bin/bdn-collab bin/bdn-terminal sbin/enroll.py sbin/invite.py bdn-collab.service bdn-collab.sysusers Caddyfile ENROLLMENT.md README.md RECOVERY.zh-CN.md terminal-plan.md > SHA256SUMS
-  tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner -cf - bin sbin bdn-collab.service bdn-collab.sysusers Caddyfile ENROLLMENT.md README.md RECOVERY.zh-CN.md terminal-plan.md SHA256SUMS |
+  sha256sum bin/bdn-collab bin/bdn-terminal sbin/enroll.py sbin/invite.py bdn-collab.service bdn-collab.sysusers Caddyfile ENROLLMENT.md README.md RECOVERY.zh-CN.md AUTORECOVERY.md restore-dot.example.sh terminal-plan.md licenses/oauth-as/LICENSE-MIT licenses/oauth-as/LICENSE-APACHE > SHA256SUMS
+  tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner -cf - bin sbin licenses bdn-collab.service bdn-collab.sysusers Caddyfile ENROLLMENT.md README.md RECOVERY.zh-CN.md AUTORECOVERY.md restore-dot.example.sh terminal-plan.md SHA256SUMS |
     gzip -n > ../advanced-server-linux-x86_64.tgz
 )
 mv -f -- "$tmp/advanced-server-linux-x86_64.tgz" "$out/advanced-server-linux-x86_64.tgz"

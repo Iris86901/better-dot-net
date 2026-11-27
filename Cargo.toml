@@ -1,6 +1,6 @@
 [package]
 name = "better-dot-net"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 publish = false
 default-run = "better-dot-net"
@@ -9,6 +9,10 @@ default-run = "better-dot-net"
 anyhow = "1"
 axum = { version = "0.8", features = ["ws", "form", "json"] }
 bytes = "1"
+base64 = { version = "0.22", optional = true }
+oauth-as = { path = "vendor/oauth-as", features = ["axum", "cimd", "resource-metadata", "bdn-snapshot"], optional = true }
+ring = { version = "0.17", optional = true }
+time = { version = "0.3", features = ["formatting"], optional = true }
 http = "1"
 futures-util = { version = "0.3", features = ["sink"] }
 hex = "0.4"
@@ -51,7 +55,7 @@ strip = true
 
 [features]
 wss-probe = ["dep:tokio-tungstenite"]
-advanced = ["tokio-util/io"]
+advanced = ["tokio-util/io", "dep:base64", "dep:ring", "dep:time", "dep:oauth-as"]
 collab-cli = ["dep:tokio-tungstenite"]
 terminal-cli = []
 
@@ -84,3 +88,6 @@ required-features = ["collab-cli"]
 name = "bdn-terminal"
 path = "src/bin/bdn-terminal.rs"
 required-features = ["terminal-cli"]
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }

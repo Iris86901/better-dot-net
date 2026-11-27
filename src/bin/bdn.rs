@@ -50,6 +50,7 @@ bdn --https [--ca CA_PEM] https://SERVER[:PORT] PRIVATE_TOKEN_FILE COMMAND
   service publish SUBDOMAIN PORT [--private | --public | --token SECRET]
   service access SUBDOMAIN <--private | --public | --token SECRET>
   service list | service remove SUBDOMAIN
+  recovery enable | recovery status | recovery pause | recovery resume | recovery disable
   proxy [--listen 127.0.0.1:7890]
   tunnel [--allow PORT[,START-END,...]] [--proxy 127.0.0.1:7890]
   expose SUBDOMAIN:PORT [...] [--private | --public | --token SECRET] [--proxy 127.0.0.1:7890] [--keep]";
@@ -1561,6 +1562,34 @@ async fn main() -> Result<()> {
         return Ok(());
     }
     match args.as_slice() {
+        [verb, action]
+            if verb == "recovery"
+                && matches!(
+                    action.as_str(),
+                    "enable" | "status" | "pause" | "resume" | "disable"
+                ) =>
+        {
+            let dir = profile_dir()?;
+            let (origin, credential) = load_profile(&dir)?;
+            let remote = is_remote_origin(&origin);
+            let data = send_http(
+                &origin,
+                remote,
+                None,
+                None,
+                Method::POST,
+                format!("/v1/recovery/{action}"),
+                Some(token_header(&credential)?),
+                "application/json",
+                Bytes::new(),
+                MAX_JSON,
+            )
+            .await?;
+            let value: Value =
+                serde_json::from_slice(&data).context("invalid recovery response")?;
+            println!("{}", serde_json::to_string_pretty(&value)?);
+            Ok(())
+        }
         [verb, flag, pem, origin] if verb == "join" && flag == "--ca" => {
             join(origin, Some(Path::new(pem)), None).await
         }
