@@ -6,16 +6,16 @@ use std::collections::BTreeMap;
 use subtle::ConstantTimeEq;
 
 pub(super) const EVENT_NAME: &str = "bdn.recovery_requested";
-pub(super) const DEBOUNCE_SECS: u64 = 45;
-pub(super) const COOLDOWN_SECS: u64 = 3600;
+pub(super) const DEBOUNCE_SECS: u64 = 15;
+pub(super) const COOLDOWN_SECS: u64 = 600;
 pub(super) const BUDGET_WINDOW_SECS: u64 = 86400;
-pub(super) const MAX_CLAIMS_PER_WINDOW: u8 = 3;
+pub(super) const MAX_CLAIMS_PER_WINDOW: u8 = 144;
 pub(super) const LEASE_TTL_SECS: u64 = 900;
 pub(super) const PAIRING_TTL_SECS: u64 = 600;
 pub(super) const SUB_MIN_LIFETIME_SECS: u64 = 120;
 pub(super) const SUB_MAX_LIFETIME_SECS: u64 = 7 * 86400;
 pub(super) const MAX_DELIVERY_ATTEMPTS: u8 = 3;
-pub(super) const FOLLOWUP_INTERVAL_SECS: u64 = 1800;
+pub(super) const FOLLOWUP_INTERVAL_SECS: u64 = 900;
 pub(super) const FOLLOWUP_MAX_REMINDERS: u8 = 2;
 pub(super) const FOLLOWUP_LIFETIME_SECS: u64 = 7200;
 

@@ -63,7 +63,7 @@ procedure; do not re-enroll silently.
 ## Defaults and maintenance
 
 - Five-second in-process tunnel observation (backed by 10s/30s tunnel keepalive);
-  45 seconds sustained disconnect after a previously observed connection. At most
+  15 seconds sustained disconnect after a previously observed connection. At most
   one incident per observed outage.
 - Transport retries: up to 3 attempts per event ID with increasing backoff
   (30s, 60s, 120s), keeping the same `eventId`. HTTP `410`/`413` stops retries
@@ -73,9 +73,9 @@ procedure; do not re-enroll silently.
   ChatGPT asynchronous batching delays). After the initial webhook receives HTTP
   2xx, if the incident remains unclaimed while the node is still offline, up to
   2 reminder events (with new `eventId`s pointing to the same `incident_id`) are
-  sent every 30 minutes within a 2-hour window. Reminders never grant extra
+  sent every 15 minutes within a 2-hour window. Reminders never grant extra
   claims.
-- Claim policy: 1 claim per incident, 1-hour cooldown, and at most 3 claims per
+- Claim policy: 1 claim per incident, 10-minute cooldown, and at most 144 claims per
   24-hour window. Post-claim execution/report lease TTL is 15 minutes.
 - OAuth grants: scoped to the `/mcp` resource and that single node. Refresh
   tokens rotate with reuse detection and have a **30-day absolute expiry** from

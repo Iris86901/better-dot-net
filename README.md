@@ -46,7 +46,7 @@ Built for **Dot (multi-Dot supported)** with one goal: **keep the VPS invisible 
    - Once joined, `bdn` maintains heartbeats, auto-reconnect, and service recovery while the VPS enforces all permissions:
      - **Direct public service publishing**: Apps inside Dot just listen on `localhost`—unaware they are public. Run `bdn expose <service>:<port>` to bind a globally unique subdomain (private by default, opt-in `--public` or `--token`; Owner can remove any service or revoke any node anytime).
      - **Transparent outbound proxy**: `bdn proxy` / `bdn tunnel --proxy 127.0.0.1:7890` provides a local mixed HTTP / CONNECT / SOCKS5 proxy; apps only need standard proxy env vars and never know the VPS address.
-   - From then on, simply ask Dot to **autonomously deploy & publish public services while subscribing to MCP wake events (`bdn.recovery_requested`)** bound to its fixed local startup script. Whenever the cloud host sleeps or disconnects, the VPS detects the dropped WSS tunnel (45 s debounce) and automatically triggers MCP to wake Dot, restart the app, and restore public access.
+   - From then on, simply ask Dot to **autonomously deploy & publish public services while subscribing to MCP wake events (`bdn.recovery_requested`)** bound to its fixed local startup script. Whenever the cloud host sleeps or disconnects, the VPS detects the dropped WSS tunnel (15 s debounce) and automatically triggers MCP to wake Dot, restart the app, and restore public access.
 
 ### MCP Configuration & CIMD OAuth Authorization
 
@@ -120,7 +120,7 @@ Point-in-time observations on a low-spec Oracle Linux x86-64 AMD micro VPS (2 vC
 
 ## Security
 
-- **Least-privilege MCP recovery**: off by default; paired per node via a 10-minute one-use pairing code and OAuth 2.1 (CIMD + PKCE S256, never exposes the node's long-term credential). Recovery events carry IDs only (no remote shell or arbitrary commands), enforce single-use `claim_recovery` with a 1-hour cooldown and 3-claims/24h cap, and `bdn recovery disable` revokes only that node's OAuth tokens without disturbing other nodes or normal WSS tunnels.
+- **Least-privilege MCP recovery**: off by default; paired per node via a 10-minute one-use pairing code and OAuth 2.1 (CIMD + PKCE S256, never exposes the node's long-term credential). Recovery events carry IDs only (no remote shell or arbitrary commands), enforce single-use `claim_recovery` with a 10-minute cooldown and 144-claims/24h cap, and `bdn recovery disable` revokes only that node's OAuth tokens without disturbing other nodes or normal WSS tunnels.
 - **Credentials stored as digests**: the VPS keeps only SHA-256 digests of node credentials, never the raw tokens; each invite code is single-use.
 - **Private by default**: `bdn expose` services stay private unless you add `--public` or `--token`, and the Owner can remove any service or revoke any node at any time.
 - **SSRF protection**: outbound connections through the gateway and tunnel are checked against an SSRF policy that blocks private, link-local, and cloud metadata addresses (e.g. `169.254.169.254`).
