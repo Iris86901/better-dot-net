@@ -4,7 +4,7 @@
 
 [![Verify](https://github.com/Iris86901/better-dot-net/actions/workflows/verify.yml/badge.svg)](https://github.com/Iris86901/better-dot-net/actions/workflows/verify.yml) [![Release](https://img.shields.io/github/v/release/Iris86901/better-dot-net)](https://github.com/Iris86901/better-dot-net/releases)
 
-> **v0.2.0 正式发布**：新增基于 MCP Events 的自动唤醒与恢复能力，彻底解决 Dot 云主机空闲休眠导致服务中断的问题——你的 9C10G 云主机现在可以真正持久化对外提供公网服务了。
+> **v0.2.1 发布**：基于 MCP Events 的自动唤醒与恢复，Dot 云主机休眠掉线后自动恢复服务，v0.2.1 按实测调整了恢复参数——你的 9C10G 云主机现在可以持久化对外提供公网服务了。
 
 一个轻量的自托管网关。只需一台低配甲骨文 AMD 小鸡（1 GiB 内存，三核心全套常驻仅 ~17.6 MiB），就能把 Dot 云主机打造成可公网访问、休眠后自动恢复的持久化服务器：
 
@@ -21,7 +21,7 @@
 
 > **v0.2.1 长时间挂机实测**：使用 v0.2.1 默认参数持续运行，Dot 云主机约每 **20 分钟**掉线一次，Dot 自主恢复约 **60 秒**，**每小时可用约 57 分钟**，可长期持续。
 >
-> **v0.2.0 实测恢复记录（2026-11-27）**：使用 ChatGPT CIMD OAuth（无需手动配置 Client ID / Secret）。主动停止 Dot 节点并等待 45 秒断线防抖后，唤醒 Webhook **1 秒**送达 OpenAI（HTTP 200），**39 秒**后 ChatGPT 自动唤醒 Dot 完成认领（`claim_recovery`）、重启本地服务（启动标记由 `850d70326313` 更新为 `facf050ff32a`）并自动恢复公网访问；开启 MCP 唤醒后的全套三核心常驻内存合计仅 **17.6 MiB**（空载 CPU `0.0%`）。
+> **v0.2.0 实测恢复记录（2026-11-27）**：停掉 Dot 节点后，ChatGPT 约 **39 秒**自动唤醒 Dot、重启服务并恢复公网访问；全套三核心常驻内存合计 **17.6 MiB**。
 
 ### 自动恢复实测记录（`Recovery Lab`）
 

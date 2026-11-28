@@ -4,7 +4,7 @@
 
 [![Verify](https://github.com/Iris86901/better-dot-net/actions/workflows/verify.yml/badge.svg)](https://github.com/Iris86901/better-dot-net/actions/workflows/verify.yml) [![Release](https://img.shields.io/github/v/release/Iris86901/better-dot-net)](https://github.com/Iris86901/better-dot-net/releases)
 
-> **v0.2.0 リリース**：MCP Events による自動ウェイクアップ・自動復旧機能を標準搭載しました。Dot クラウドホストのスリープによるサービス停止を解消し、9C10G 環境で永続的な公衆サービスを安定提供できます。
+> **v0.2.1 リリース**：MCP Events による自動ウェイクアップ・自動復旧で、Dot クラウドホストのスリープ後もサービスを自動で復旧します。v0.2.1 では実測に基づき復旧パラメータを調整し、9C10G 環境で永続的な公衆サービスを提供できます。
 
 低スペックな Oracle AMD 小型 VPS 1 台（メモリ 1 GiB、Rust コア 3 プロセス合計 **約 17.6 MiB**）で動作し、Dot クラウドホストを公衆公開・自動復旧対応の永続サーバーへ変える軽量セルフホスト型ゲートウェイです：
 
@@ -21,7 +21,7 @@
 
 > **v0.2.1 長時間稼働の実測**：v0.2.1 の既定値で連続稼働させると、Dot クラウドホストは約 **20 分**ごとに切断され、Dot は約 **60 秒**で自律復旧します。**1 時間あたり約 57 分間利用可能**な状態を長期間維持できます。
 >
-> **v0.2.0 自動復旧の実測記録（2026-11-27）**：ChatGPT CIMD OAuth（Client ID / Secret 設定不要）で連携。Dot ノード停止＋45 秒の切断デバウンス後、Webhook は **1 秒**で OpenAI に受理（HTTP 200）され、**39 秒**後に ChatGPT が自動で Dot を起動して `claim_recovery` を完了、バックエンドを再起動（起動マーカーが `850d70326313` → `facf050ff32a` に更新）して公衆アクセスを自動復旧しました。MCP 復旧有効時の Rust コア 3 プロセス合計常駐メモリも **17.6 MiB**（アイドル CPU `0.0%`）です。
+> **v0.2.0 自動復旧の実測記録（2026-11-27）**：Dot ノード停止後、約 **39 秒**で ChatGPT が Dot を起動し、バックエンドを再起動して公衆アクセスを復旧しました。Rust コア 3 プロセス合計常駐メモリは **17.6 MiB** です。
 
 ### 自動復旧の実測記録（`Recovery Lab`）
 

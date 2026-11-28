@@ -4,7 +4,7 @@
 
 [![Verify](https://github.com/Iris86901/better-dot-net/actions/workflows/verify.yml/badge.svg)](https://github.com/Iris86901/better-dot-net/actions/workflows/verify.yml) [![Release](https://img.shields.io/github/v/release/Iris86901/better-dot-net)](https://github.com/Iris86901/better-dot-net/releases)
 
-> **v0.2.0 is here**: Built-in MCP Events automatic wake & recovery solves Dot cloud-host idle sleep once and for all — your 9C10G cloud host can now serve persistent public applications around the clock.
+> **v0.2.1 is here**: MCP Events automatic wake & recovery brings services back after the Dot cloud host sleeps, and v0.2.1 retunes the recovery limits from real-world testing — your 9C10G cloud host can now serve persistent public applications.
 
 A tiny self-hosted gateway that runs on a single low-spec Oracle AMD micro VPS (1 GiB RAM, **~17.6 MiB** combined RSS across all three Rust cores) and turns a Dot cloud host into a publicly reachable, self-healing backend:
 
@@ -21,7 +21,7 @@ Built for **Dot (multi-Dot supported)** with one goal: **keep the VPS invisible 
 
 > **v0.2.1 long-run record**: With the v0.2.1 defaults left running, the Dot cloud host drops roughly every **20 minutes** and Dot recovers on its own in about **60 s**, giving about **57 minutes of availability per hour**, sustained indefinitely.
 >
-> **v0.2.0 live recovery record (2026-11-27)**: Paired via ChatGPT CIMD OAuth (no manual Client ID / Secret). After stopping the Dot node and waiting the 45 s disconnect debounce, the wake webhook was acknowledged by OpenAI in **1 s** (HTTP 200), and **39 s** later ChatGPT automatically woke Dot, claimed recovery (`claim_recovery`), restarted the backend (startup marker changed `850d70326313` → `facf050ff32a`), and restored public access. With MCP wake active, all three Rust server cores totaled **17.6 MiB** RSS (`0.0%` idle CPU).
+> **v0.2.0 live recovery record (2026-11-27)**: After stopping the Dot node, ChatGPT woke Dot, restarted the backend and restored public access in about **39 s**. All three Rust server cores total **17.6 MiB** RSS.
 
 ### Live Auto-Recovery Verification (`Recovery Lab`)
 
