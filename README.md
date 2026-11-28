@@ -19,6 +19,8 @@ A tiny self-hosted gateway that runs on a single low-spec Oracle AMD micro VPS (
 
 Built for **Dot (multi-Dot supported)** with one goal: **keep the VPS invisible to application code, using `bdn` as unified network infrastructure** — use a tiny 1 GiB micro VPS as your public edge while turning a **9C10G** Dot cloud host into a persistent, self-healing public server via **MCP Events auto-wake**.
 
+> **v0.2.1 long-run record**: With the v0.2.1 defaults left running, the Dot cloud host drops roughly every **20 minutes** and Dot recovers on its own in about **60 s**, giving about **57 minutes of availability per hour**, sustained indefinitely.
+>
 > **v0.2.0 live recovery record (2026-11-27)**: Paired via ChatGPT CIMD OAuth (no manual Client ID / Secret). After stopping the Dot node and waiting the 45 s disconnect debounce, the wake webhook was acknowledged by OpenAI in **1 s** (HTTP 200), and **39 s** later ChatGPT automatically woke Dot, claimed recovery (`claim_recovery`), restarted the backend (startup marker changed `850d70326313` → `facf050ff32a`), and restored public access. With MCP wake active, all three Rust server cores totaled **17.6 MiB** RSS (`0.0%` idle CPU).
 
 ### Live Auto-Recovery Verification (`Recovery Lab`)
@@ -109,6 +111,7 @@ The entire Advanced stack (`bdn-collab`, static musl `bdn`, `bdn-terminal`—inc
 
 Point-in-time observations on a low-spec Oracle Linux x86-64 AMD micro VPS (2 vCPU / ~1 GiB RAM; not peak-load bounds):
 
+- **v0.2.1 long-run availability test**: The Dot cloud host drops roughly every 20 minutes; MCP auto-recovery brings services back in about **60 s** each time, for roughly **57 of every 60 minutes** available, and keeps going indefinitely.
 - **Live MCP auto-recovery test (2026-11-27)**: Paired via ChatGPT CIMD OAuth (`https://chatgpt.com/oauth/client.json`). After stopping the Dot node and waiting the 45 s disconnect debounce, the recovery webhook was acknowledged in **1 s** (HTTP 200); ChatGPT woke Dot and claimed recovery in **39 s**, restarted the backend (startup marker changed `850d70326313` → `facf050ff32a`), reported success, and automatically restored the public WSS service.
 - **Resident memory**:
   - Full live stack (Advanced + MCP Wake active + Basic, 2026-11-27): `bdn-collab` **7.8 MiB**, `better-dot-net` **5.2 MiB**, `meow-rs` **4.6 MiB** (**17.6 MiB total** across all three Rust cores, `0.0%` idle CPU).
