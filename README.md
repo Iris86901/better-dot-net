@@ -49,7 +49,6 @@ Built for **Dot (multi-Dot supported)** with one goal: **keep the VPS invisible 
      - **Direct public service publishing**: Apps inside Dot just listen on `localhost`—unaware they are public. Run `bdn expose <service>:<port>` to bind a globally unique subdomain (private by default, opt-in `--public` or `--token`; Owner can remove any service or revoke any node anytime).
      - **Transparent outbound proxy**: `bdn proxy` / `bdn tunnel --proxy 127.0.0.1:7890` provides a local mixed HTTP / CONNECT / SOCKS5 proxy; apps only need standard proxy env vars and never know the VPS address.
    - From then on, simply ask Dot to **autonomously deploy & publish public services while subscribing to MCP wake events (`bdn.recovery_requested`)** bound to its fixed local startup script. Whenever the cloud host sleeps or disconnects, the VPS detects the dropped WSS tunnel (15 s debounce) and automatically triggers MCP to wake Dot, restart the app, and restore public access.
-   - **A nice side effect**: since the host drops roughly every 20 minutes, each time Dot wakes up it can also pick up where it left off on whatever task you gave it. With wildcard DNS set up in advance, Dot can publish whatever new service it builds with `bdn expose` on its own — effectively a background developer that checks in every 20 minutes and ships its own work.
 
 ### MCP Configuration & CIMD OAuth Authorization
 
